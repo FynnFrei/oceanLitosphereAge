@@ -1,0 +1,33 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="PyPep8Inspection" enabled="true" level="WEAK WARNING" enabled_by_default="true">
+      <option name="ignoredErrors">
+        <list>
+          <option value="E501" />
+        </list>
+      </option>
+    </inspection_tool>
+    <inspection_tool class="PyUnresolvedReferencesInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <option name="ignoredIdentifiers">
+        <list>
+          <option value="numpy.array" />
+          <option value="numpy.empty_like" />
+          <option value="numpy.arange" />
+          <option value="numpy.argmin" />
+          <option value="numpy.random" />
+          <option value="numpy.where" />
+          <option value="numpy.isin" />
+          <option value="numpy.append" />
+          <option value="numpy.copy" />
+          <option value="numpy.delete" />
+          <option value="numpy.concatenate" />
+          <option value="numpy.round" />
+          <option value="FreeCAD.Units" />
+          <option value="FreeCADGui.getMainWindow" />
+          <option value="FreeCADGui.doCommand" />
+        </list>
+      </option>
+    </inspection_tool>
+  </profile>
+</component>
