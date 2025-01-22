@@ -35,3 +35,9 @@ def downsample_grid(grid, block_size):
     print(np.shape(downsampled_grid))
 
     return downsampled_lat, downsampled_lon, downsampled_grid
+
+
+def age_to_depth(grid):
+    m = 0.3
+    depth_grid = m * np.sqrt(1000000*grid)+2000
+    return depth_grid
