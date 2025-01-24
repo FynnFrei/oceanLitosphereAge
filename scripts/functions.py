@@ -13,13 +13,15 @@ def compress_grid(grid, block_size):
     compressed_grid = np.zeros((grid.shape[0] // block_size, grid.shape[1] // block_size))
     compressed_lat = np.linspace(-90, 90, grid.shape[0] // block_size)
     compressed_lon = np.linspace(-180, 180, grid.shape[1] // block_size)
-    print(f'Shape of compressed grid: {np.shape(compressed_grid)}')
+    print(f'Target shape: {np.shape(compressed_grid)}')
     for i in range(0, grid.shape[0] - 1, block_size):  # calculate blocks
+        # print(f'column{i} of {grid.shape[0]-1}', end='\r')
         for j in range(0, grid.shape[1] - 1, block_size):
             # fill compressed_grid with values
             compressed_grid[i // block_size, j // block_size] = grid[i:i + block_size, j:j + block_size].mean()
+    print(f'grid downsampled successfully')
 
-    return compressed_lon, compressed_lat, compressed_grid
+    return compressed_lat, compressed_lon, compressed_grid
 
 
 # Does not work properly right now
@@ -39,7 +41,7 @@ def downsample_grid(grid, block_size):
     return downsampled_lat, downsampled_lon, downsampled_grid
 
 
-def write_to_netcdf(output_filename, lon, lat, grid):
+def write_to_netcdf(output_filename, lat, lon, grid):
     """
     Write lon, lat, grid into a new .nc file.
 
@@ -55,7 +57,7 @@ def write_to_netcdf(output_filename, lon, lat, grid):
 
     # Combine folder and filename
     full_output_path = os.path.join(output_folder, output_filename)
-
+    print('Writing .nc file...')
     # Open the NetCDF file for writing
     with netcdf_file(full_output_path, 'w') as nc_file:
         # Define dimensions
@@ -101,12 +103,9 @@ def exclude_continental_plate(grid1, grid2):
     return grid2_ocean
 
 
+'''
 def shift_longitude(lon, grid, new_center):
     # shift center to wherever you want
-    '''new_lon = np.where(lon < 0, lon + 360, lon)
-    sorted_idx = np.argsort(new_lon)
-    new_lon = new_lon[sorted_idx]
-    new_grid = grid[:, sorted_idx]'''
     cut_deg = new_center
     if 0 <= new_center <= 180:
         cut_deg -= 180
@@ -124,17 +123,21 @@ def shift_longitude(lon, grid, new_center):
     new_idx = np.concatenate((right_idx, left_idx))
 
     new_grid = grid[:, new_idx]
-    '''
-    # Calculate cell edges for pcolormesh
-    new_lon_edges = np.concatenate(([new_lon[0] - 0.5 * (new_lon[1] - new_lon[0])],
-                                    0.5 * (new_lon[:-1] + new_lon[1:]),
-                                    [new_lon[-1] + 0.5 * (new_lon[-1] - new_lon[-2])]))'''
     return new_lon, new_grid
+'''
 
 
-def trim_grid(lat, lon, grid, trim_lat, trim_lon):
-    # TODO automatically trim to same size
+def shift_longitude(lon, grid, new_center):
+    shift = - (len(lon)/360) * new_center
+    shifted_lon = np.roll(lon, shift)
+    shifted_grid = np.roll(grid, shift, axis=1)
+    return shifted_lon, shifted_grid
+
+
+def trim_grid(lat, lon, grid, ref_grid):
     # cut off the last rows and columns for equal shape
+    trim_lat = len(grid[0]) - len(ref_grid[0])
+    trim_lon = len(grid[1]) - len(ref_grid[1])
     new_lat = lon[trim_lat:]
     new_lon = lat[:-trim_lon]
     new_grid = grid[trim_lat:, :-trim_lon]  # slice a_grid to same shape as b_grid
