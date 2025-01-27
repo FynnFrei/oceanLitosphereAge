@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.io import netcdf_file
 import os
+from matplotlib import pyplot as plt
 
 
 # the theory of cooling oceanic litosphere in geo3 script1 P. 124
@@ -143,3 +144,24 @@ def trim_grid(lat, lon, grid, ref_grid):
     new_grid = grid[trim_lat:, :-trim_lon]  # slice a_grid to same shape as b_grid
     print(f"New shape: {np.shape(new_grid)}")
     return new_lat, new_lon, new_grid
+
+
+def plot_scatter(grid1, grid2):
+    grid1_flat = np.reshape(grid1, -1)
+    grid2_flat = np.reshape(grid2, -1)
+    mask_nan = ~np.isnan(grid1_flat) & ~np.isnan(grid2_flat)
+    grid1_flat_clean = grid1_flat[mask_nan]
+    grid2_flat_clean = grid2_flat[mask_nan]
+    mask_positive = grid2_flat_clean > 0
+
+    optimum_line = np.linspace(-10000, 0, 2)
+
+    fig3 = plt.figure(figsize=(16, 12))
+    plt.scatter(grid1_flat_clean[~mask_positive], grid2_flat_clean[~mask_positive], s=0.01, color="blue")
+    plt.scatter(grid1_flat_clean[mask_positive], grid2_flat_clean[mask_positive], s=0.01, color="green")    # above sea level
+    plt.plot(optimum_line, optimum_line, color="red")
+    plt.gca().invert_xaxis()
+    plt.title("real depth over calculated depth")
+    plt.xlabel("calculated depth")
+    plt.ylabel("real depth")
+    plt.show()

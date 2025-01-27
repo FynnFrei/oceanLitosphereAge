@@ -115,7 +115,32 @@ plt.imshow(
     origin="lower",
     cmap=cmap3, vmin=-3000, vmax=3000, aspect=1
 )
-plt.title("Deep Anomaly")
+plt.title("Depth Anomaly (comparing calculated with real depth)")
 plt.colorbar(label="Δ Depth")
 plt.grid()
 plt.show()
+
+# functions.plot_scatter(d_grid, b_grid_shift)
+'''
+grid1_flat = np.reshape(d_grid, -1)
+grid2_flat = np.reshape(b_grid_shift, -1)
+mask_nan = ~np.isnan(grid1_flat) & ~np.isnan(grid2_flat)
+grid1_flat_clean = grid1_flat[mask_nan]
+grid2_flat_clean = grid2_flat[mask_nan]
+ratio = grid2_flat_clean / grid1_flat_clean
+diff = grid2_flat_clean - grid1_flat_clean
+
+fig4 = plt.figure()
+plt.axvline(x=1, alpha=0.4, color='red', linestyle='--', linewidth=2)
+plt.hist(ratio, bins=120, alpha=1, range=(-1, 5))
+plt.title("Distribution of real/calc depth")
+plt.show()
+
+fig5 = plt.figure()
+plt.axvline(x=0, alpha=0.4, color='red', linestyle='--', linewidth=2)
+plt.hist(diff, bins=100, alpha=1)
+plt.title("Distribution of Δ depth")
+plt.text(-6000, 2*10**5, "Deeper than calculation")
+plt.text(2000, 2*10**5, "Shallower than calculation")
+plt.show()
+'''
