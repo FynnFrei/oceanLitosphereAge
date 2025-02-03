@@ -2,6 +2,7 @@ import numpy as np
 from scipy.io import netcdf_file
 import os
 from matplotlib import pyplot as plt
+from matplotlib.lines import Line2D
 
 
 # the theory of cooling oceanic litosphere in geo3 script1 P. 124
@@ -83,18 +84,29 @@ def write_to_netcdf(output_filename, lat, lon, grid):
     print(f"NetCDF file '{full_output_path}' created successfully.")
 
 
-def age_to_depth(grid):
-    '''m = -0.3
-    depth_grid = m * np.sqrt(1000000 * grid)'''
+def calc_ridge_depth(a_grid, b_grid, max_age):
+    # calculates the mean depth for a given max crust age
+    a_grid_ridge = np.where(a_grid > max_age, np.nan, a_grid)
+    ridge_depth = np.where(a_grid_ridge > 0, b_grid, np.nan)
+    avr_ridge_depth = np.nanmean(ridge_depth)   # calculate mean depth
+    # num_of_points = np.sum(a_grid_ridge > 0)
+    # print(avr_ridge_depth, num_of_points)
 
-    alpha = 3 * 10 ** -5  # coefficient of thermal expansion in 1/K
+    return avr_ridge_depth
+
+
+def age_to_depth(grid, d_0):
+
+    alpha = 2 * 10 ** -5  # coefficient of thermal expansion in 1/K
     T_m = 1570  # mantle temperature in K (e.g. Vl.1, P.115)
     rho_m = 3300  # initial density of the hot mantle at T_m in Kg/m^3 (example value)
-    rho_w = 1000  # density of water in kg/m^3
+    rho_w = 1030  # density of water in kg/m^3
     kappa = 10 ** -6  # thermal diffusivity in m^2/s (data from Vl.1, P. 115)
     t = 3600 * 24 * 365 * 1000000 * grid  # time in s
+    # d_0 is average ocean ridge depth
+    # d is not absolute depth but depth change compared to ocean ridge
 
-    d = -(2 * alpha * rho_m * T_m / (rho_m - rho_w)) * np.sqrt((kappa / np.pi) * t)
+    d = -(2 * alpha * rho_m * T_m / (rho_m - rho_w)) * np.sqrt((kappa / np.pi) * t) + d_0
     return d
 
 
@@ -154,14 +166,23 @@ def plot_scatter(grid1, grid2):
     grid2_flat_clean = grid2_flat[mask_nan]
     mask_positive = grid2_flat_clean > 0
 
-    optimum_line = np.linspace(-10000, 0, 2)
+    optimum_line = np.linspace(-8000, -2000, 2)
 
-    fig3 = plt.figure(figsize=(16, 12))
-    plt.scatter(grid1_flat_clean[~mask_positive], grid2_flat_clean[~mask_positive], s=0.01, color="blue")
-    plt.scatter(grid1_flat_clean[mask_positive], grid2_flat_clean[mask_positive], s=0.01, color="green")    # above sea level
+    fig3 = plt.figure(figsize=(22, 12))
+    plt.scatter(grid1_flat_clean[~mask_positive], grid2_flat_clean[~mask_positive], s=0.0001, color="blue")
+    plt.scatter(grid1_flat_clean[mask_positive], grid2_flat_clean[mask_positive], s=0.0001, color="green")    # above sea level
     plt.plot(optimum_line, optimum_line, color="red")
     plt.gca().invert_xaxis()
-    plt.title("real depth over calculated depth")
+    plt.title("Real Depth Over Calculated Depth (low detail)")
+    plt.text(-2000, -10000, "GEBCO_2020 Grid, Ogg 2012")
     plt.xlabel("calculated depth")
     plt.ylabel("real depth")
+    # Custom legend markers for larger dots
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label="Below Sea Level"),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label="Above Sea Level"),
+        Line2D([0], [0], color='red', linewidth=2, label="calc. depth = real depth")
+    ]
+    plt.legend(handles=legend_elements, loc="upper right")
     plt.show()
+
