@@ -7,7 +7,11 @@ from matplotlib.lines import Line2D
 
 # the theory of cooling oceanic litosphere in geo3 script1 P. 124
 
-# TODO plot actual depth over expected depth for all grid points
+# TODO plot actual depth over expected depth for all grid points in absolute
+# TODO change color scheme and better description of anomaly map
+# TODO larger typo in plots
+# TODO coastline
+# TODO heat map for scatter
 
 
 # the not ideal way to downsample data. Lot of processing.
@@ -84,13 +88,18 @@ def write_to_netcdf(output_filename, lat, lon, grid):
     print(f"NetCDF file '{full_output_path}' created successfully.")
 
 
+def get_land_grid(b_grid):
+    land_grid = np.where(b_grid >= 0, 1, np.nan)
+    return land_grid
+
+
 def calc_ridge_depth(a_grid, b_grid, max_age):
     # calculates the mean depth for a given max crust age
-    a_grid_ridge = np.where(a_grid > max_age, np.nan, a_grid)
-    ridge_depth = np.where(a_grid_ridge > 0, b_grid, np.nan)
+    a_grid_ridge = np.where(a_grid > max_age, np.nan, a_grid)   # grid only contains young lithosphere -> ridge
+    ridge_depth = np.where(a_grid_ridge > 0, b_grid, np.nan)    # gives depht to ridge grid points
     avr_ridge_depth = np.nanmean(ridge_depth)   # calculate mean depth
-    # num_of_points = np.sum(a_grid_ridge > 0)
-    # print(avr_ridge_depth, num_of_points)
+    num_of_points = np.sum(a_grid_ridge > 0)
+    print(avr_ridge_depth, num_of_points)
 
     return avr_ridge_depth
 
@@ -173,16 +182,16 @@ def plot_scatter(grid1, grid2):
     plt.scatter(grid1_flat_clean[mask_positive], grid2_flat_clean[mask_positive], s=0.0001, color="green")    # above sea level
     plt.plot(optimum_line, optimum_line, color="red")
     plt.gca().invert_xaxis()
-    plt.title("Real Depth Over Calculated Depth (low detail)")
+    plt.title("Real Depth Over Calculated Depth (low detail)", fontsize=28)
     plt.text(-2000, -10000, "GEBCO_2020 Grid, Ogg 2012")
-    plt.xlabel("calculated depth")
-    plt.ylabel("real depth")
+    plt.xlabel("calculated depth", fontsize=16)
+    plt.ylabel("real depth", fontsize=16)
     # Custom legend markers for larger dots
     legend_elements = [
         Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label="Below Sea Level"),
         Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label="Above Sea Level"),
         Line2D([0], [0], color='red', linewidth=2, label="calc. depth = real depth")
     ]
-    plt.legend(handles=legend_elements, loc="upper right")
+    plt.legend(handles=legend_elements, loc="upper right", fontsize=14)
     plt.show()
 
