@@ -7,10 +7,6 @@ from matplotlib.lines import Line2D
 
 # the theory of cooling oceanic litosphere in geo3 script1 P. 124
 
-# TODO plot actual depth over expected depth for all grid points in absolute
-# TODO larger typo in plots
-# TODO heat map for scatter
-
 
 # the not ideal way to downsample data. Lot of processing.
 def compress_grid(grid, block_size):
