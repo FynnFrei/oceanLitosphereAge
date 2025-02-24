@@ -11,13 +11,15 @@ import matplotlib.colors as mcolors
 cmap1 = plt.cm.viridis
 cmap2 = plt.cm.turbo_r
 cmap3 = plt.cm.seismic
+cmap_reds = plt.cm.Reds
 cmap_black = mcolors.ListedColormap([0, 0, 0, 0.9])
 continental_color = (0.5, 0.5, 0.5)
-transparent_nan = (0, 0, 0, 0)
+transparent = (0, 0, 0, 0)
 cmap1.set_bad(color=continental_color)  # gives NaN pixels specific color
 cmap2.set_bad(color=continental_color)
 cmap3.set_bad(color=continental_color)
-cmap_black.set_bad(color=transparent_nan)
+cmap_reds.set_bad(color=continental_color)
+cmap_black.set_bad(color=transparent)
 font_axes_scale = 1.8  # axes values
 font_header_scale = 3.8  # factor that scales the header font to the standard font size
 font_label_scale = 2.5  # labels, source(GEBCO)
@@ -105,7 +107,7 @@ def depth_anomaly_map(size):
         aspect=1
     )
     relative_font_size = fig2.get_size_inches()[0] * 0.5  # gets font size relative to figure size
-    plt.title("Difference between calculated depth and bathymetry", fontsize=relative_font_size * font_header_scale,
+    plt.title("Difference between \nCalculated and Bathymetric Depth", fontsize=relative_font_size * font_header_scale,
               pad=10)
     plt.tick_params(labelsize=relative_font_size * font_axes_scale)
     plt.xlabel("Longitude", fontsize=relative_font_size * font_label_scale)
@@ -116,11 +118,53 @@ def depth_anomaly_map(size):
     cbar.set_ticklabels([f"{tick * 0.001}km" for tick in cbar_ticks])  # Convert to km and format
     cbar.ax.tick_params(labelsize=relative_font_size * font_axes_scale)  # modify font size of cbar values
     # cbar.set_label(label="Δ Depth in m", fontsize=relative_font_size*font_label_scale)
-    cbar.ax.text(-relative_font_size * 0.1, 0, "deeper than calculated", fontsize=relative_font_size * font_axes_scale,
+    cbar.ax.text(-relative_font_size * 0.1, 0, "deeper than calculated",
+                 fontsize=relative_font_size * font_text_scale,
                  rotation=90, ha="center", va="bottom", transform=cbar.ax.transAxes)
     cbar.ax.text(-relative_font_size * 0.1, 1, "shallower than calculated",
-                 fontsize=relative_font_size * font_axes_scale,
+                 fontsize=relative_font_size * font_text_scale,
                  rotation=90, ha="center", va="top", transform=cbar.ax.transAxes)
+    plt.grid()
+    plt.text(-170, -85, "GEBCO_2020 Grid, Ogg 1012", fontsize=relative_font_size * font_label_scale)
+    plt.show()
+
+
+# depth absolute anomaly map--------------------------------------------------------------------------------------------
+def depth_abs_anomaly_map(size):
+    ratio = size * 16/9
+    fig2, ax = plt.subplots(figsize=(ratio, size))
+    depth_img = ax.imshow(
+        data.depth_anomaly_abs,
+        extent=[data.a_lon_shift.min(), data.a_lon_shift.max(), data.a_lat.min(), data.a_lat.max()],
+        origin="lower",
+        cmap=cmap_reds,
+        vmin=0,
+        vmax=4000,
+        aspect=1
+    )
+    ax.imshow(
+        data.land_grid,
+        extent=[data.a_lon_shift.min(), data.a_lon_shift.max(), data.a_lat.min(), data.a_lat.max()],
+        origin="lower",
+        cmap=cmap_black,
+        alpha=0.3,
+        aspect=1
+    )
+    relative_font_size = fig2.get_size_inches()[0] * 0.5  # gets font size relative to figure size
+    plt.title("Absolute Difference between\n Calculated and Bathymetric Depth",
+              fontsize=relative_font_size * font_header_scale, pad=10)
+    plt.tick_params(labelsize=relative_font_size * font_axes_scale)
+    plt.xlabel("Longitude", fontsize=relative_font_size * font_label_scale)
+    plt.ylabel("Latitude", fontsize=relative_font_size * font_label_scale)
+    cbar = plt.colorbar(depth_img, ax=ax, fraction=0.0232)
+    cbar_ticks = np.linspace(0, 4000, num=5)  # Choose appropriate tick positions
+    cbar.set_ticks(cbar_ticks)
+    cbar.set_ticklabels([f"{tick * 0.001}km" for tick in cbar_ticks])  # Convert to km and format
+    cbar.ax.tick_params(labelsize=relative_font_size * font_axes_scale)  # modify font size of cbar values
+    # cbar.set_label(label="Δ Depth in m", fontsize=relative_font_size*font_label_scale)
+    cbar.ax.text(-relative_font_size * 0.1, 0.5, "Δ Depth in km",
+                 fontsize=relative_font_size * font_label_scale,
+                 rotation=90, ha="center", va="center", transform=cbar.ax.transAxes)
     plt.grid()
     plt.text(-170, -85, "GEBCO_2020 Grid, Ogg 1012", fontsize=relative_font_size * font_label_scale)
     plt.show()

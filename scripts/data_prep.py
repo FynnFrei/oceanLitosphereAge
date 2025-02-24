@@ -2,7 +2,7 @@ from scipy.io import netcdf_file
 from scripts import functions
 
 path = "grids/"
-accuracy = 6  # how many minutes° are one grid point (2 or 6)
+accuracy = 2  # how many minutes° are one grid point (2 or 6)
 age_file = netcdf_file(path + f'age.2020.1.GTS2012.{accuracy}m.grd', 'r', mmap=False)
 bathymetry_file = netcdf_file(path + f'GRIDONE_2D_2008_{accuracy}m.nc', mmap=False)
 #print(bathymetry_file.variables.keys())
