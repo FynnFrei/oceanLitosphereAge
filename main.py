@@ -8,7 +8,7 @@ from scripts import functions
 from scripts.functions import get_land_grid
 
 path = "grids/"
-accuracy = 6  # how many minutes° are one gridpoint
+accuracy = 2  # how many minutes° are one gridpoint
 age_file = netcdf_file(path + f'age.2020.1.GTS2012.{accuracy}m.grd', 'r', mmap=False)
 bathymetry_file = netcdf_file(path + f'GRIDONE_2D_2008_{accuracy}m.nc', mmap=False)
 #coastline_file = netcdf_file(path + f'binned_GSHHS_f.nc', mmap=False)
@@ -56,15 +56,15 @@ depth_anomaly_abs = abs(depth_anomaly)
 cmap1 = plt.cm.viridis
 cmap2 = plt.cm.turbo_r
 cmap3 = plt.cm.seismic
-cmap4 = plt.cm.Greens
-continent_color = (0.5, 0.5, 0.5)
+cmap_black = mcolors.ListedColormap([0, 0, 0, 0.9])
+continental_color = (0.5, 0.5, 0.5)
 transparent_nan = (0, 0, 0, 0)
-cmap1.set_bad(color=continent_color)
-cmap2.set_bad(color=continent_color)
-cmap3.set_bad(color=continent_color)
-cmap4.set_bad(color=transparent_nan)
+cmap1.set_bad(color=continental_color)    # gives NaN pixels specific color
+cmap2.set_bad(color=continental_color)
+cmap3.set_bad(color=continental_color)
+cmap_black.set_bad(color=transparent_nan)
 font_axes_scale = 1.8  # axes values
-font_header_scale = 4  # factor that scales the header font to the standard font size
+font_header_scale = 3.8  # factor that scales the header font to the standard font size
 font_label_scale = 2.5  # labels, source(GEBCO)
 font_text_scale = 2  # normal text, description
 
@@ -127,14 +127,14 @@ plt.show()
 
 # depth anomaly map-----------------------------------------------------------------------------------------------------
 
-fig2, ax = plt.subplots(figsize=(18, 9))
-ax.imshow(
+fig2, ax = plt.subplots(figsize=(16, 9))
+depth_img = ax.imshow(
     depth_anomaly,
     extent=[a_lon_shift.min(), a_lon_shift.max(), a_lat.min(), a_lat.max()],
     origin="lower",
     cmap=cmap3,
-    vmin=-3000,
-    vmax=3000,
+    vmin=-4000,
+    vmax=4000,
     aspect=1
 )
 land_grid = get_land_grid(b_grid_shift)
@@ -143,21 +143,28 @@ ax.imshow(
     land_grid,
     extent=[a_lon_shift.min(), a_lon_shift.max(), a_lat.min(), a_lat.max()],
     origin="lower",
-    cmap=cmap4,
+    cmap=cmap_black,
     vmin=0,
     vmax=1,
     alpha=0.3,
     aspect=1
 )
 relative_font_size = fig2.get_size_inches()[0]*0.5  # gets font size relative to figure size
-plt.title("Calculated Depth - Bathymetric Depth", fontsize=relative_font_size*font_header_scale)
+plt.title("Difference between calculated depth and bathymetry", fontsize=relative_font_size*font_header_scale, pad=10)
 plt.text(-170, -85, "GEBCO_2020 Grid, Ogg 1012", fontsize=relative_font_size*font_label_scale)
-'''ax.cbar = plt.colorbar()
-ax.cbar.ax.tick_params(labelsize=relative_font_size*font_axes_scale)   # modify font size of cbar values
-ax.cbar.set_label(label="Δ depth (in meters)", fontsize=relative_font_size*font_label_scale)'''
 plt.tick_params(labelsize=relative_font_size*font_axes_scale)
 plt.xlabel("Longitude", fontsize=relative_font_size*font_label_scale)
 plt.ylabel("Latitude", fontsize=relative_font_size*font_label_scale)
+cbar = plt.colorbar(depth_img, ax=ax, fraction=0.0232)
+cbar_ticks = np.linspace(-4000, 4000, num=5)  # Choose appropriate tick positions
+cbar.set_ticks(cbar_ticks)
+cbar.set_ticklabels([f"{tick*0.001}km" for tick in cbar_ticks])  # Convert to km and format
+cbar.ax.tick_params(labelsize=relative_font_size*font_axes_scale)   # modify font size of cbar values
+# cbar.set_label(label="Δ Depth in m", fontsize=relative_font_size*font_label_scale)
+cbar.ax.text(-relative_font_size*0.1, 0, "deeper than calculated", fontsize=relative_font_size * font_axes_scale,
+             rotation=90, ha="center", va="bottom", transform=cbar.ax.transAxes)
+cbar.ax.text(-relative_font_size*0.1, 1, "shallower than calculated", fontsize=relative_font_size * font_axes_scale,
+             rotation=90, ha="center", va="top", transform=cbar.ax.transAxes)
 plt.grid()
 plt.show()
 

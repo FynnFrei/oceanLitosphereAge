@@ -8,9 +8,7 @@ from matplotlib.lines import Line2D
 # the theory of cooling oceanic litosphere in geo3 script1 P. 124
 
 # TODO plot actual depth over expected depth for all grid points in absolute
-# TODO change color scheme and better description of anomaly map
 # TODO larger typo in plots
-# TODO coastline
 # TODO heat map for scatter
 
 
