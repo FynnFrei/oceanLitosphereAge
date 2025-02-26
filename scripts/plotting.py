@@ -2,11 +2,21 @@ import numpy as np
 from scripts import data_prep as data
 from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
+import matplotlib.font_manager as fm
+from matplotlib.lines import Line2D
 
-# TODO hist and all maps typo and scales
-# TODO plot actual depth over expected depth for all grid points in absolute
-# TODO heat map for scatter
+
+# TODO all_maps typo and scales
+# TODO heat map for scatter, age as 3rd axis
+# TODO scatter 2. axis fix!
 # variables
+
+font_path_regular = "C:/Users/fynnf/Documents/Weiteres/Fonts/static/Montserrat-Medium.ttf"
+fm.fontManager.addfont(font_path_regular)  # Register font
+montserrat_regular = fm.FontProperties(fname=font_path_regular).get_name()  # Get font name
+
+# Set Montserrat as the default font
+plt.rcParams["font.family"] = montserrat_regular
 
 cmap1 = plt.cm.viridis
 cmap2 = plt.cm.turbo_r
@@ -85,7 +95,7 @@ def all_maps():
 
 # depth anomaly map-----------------------------------------------------------------------------------------------------
 def depth_anomaly_map(size):
-    ratio = size * 16/9
+    ratio = size * 16 / 9
     fig2, ax = plt.subplots(figsize=(ratio, size))
     depth_img = ax.imshow(
         data.depth_anomaly,
@@ -131,7 +141,7 @@ def depth_anomaly_map(size):
 
 # depth absolute anomaly map--------------------------------------------------------------------------------------------
 def depth_abs_anomaly_map(size):
-    ratio = size * 16/9
+    ratio = size * 16 / 9
     fig2, ax = plt.subplots(figsize=(ratio, size))
     depth_img = ax.imshow(
         data.depth_anomaly_abs,
@@ -171,24 +181,68 @@ def depth_abs_anomaly_map(size):
 
 
 # functions.plot_scatter(d_grid, b_grid_shift_ocean)
+def depth_anomaly_scatter():
+    mask_positive = data.grid2 > 0  # where bathymetry is > 0 -> land
 
-# depth anomaly histogram-----------------------------------------------------------------------------------------------
-def depth_anomaly_hist():
-    grid1_flat = np.reshape(data.d_grid, -1)
-    grid2_flat = np.reshape(data.b_grid_shift_ocean, -1)
-    mask_nan = ~np.isnan(grid1_flat) & ~np.isnan(grid2_flat)
-    grid1_flat_clean = grid1_flat[mask_nan]
-    grid2_flat_clean = grid2_flat[mask_nan]
-    diff = grid2_flat_clean - grid1_flat_clean
+    optimum_line = np.linspace(-8000, -2000, 2)
 
-    plt.figure()
-    plt.axvline(x=0, alpha=0.4, color='red', linestyle='--', linewidth=2)
-    plt.hist(diff, bins=100, alpha=1, range=(-3000, 7000))
-    plt.title("Distribution of Δ depth", fontsize=font_header_scale)
-    plt.text(5800, 1.95 * 10 ** 6, "GEBCO_2020 Grid, Ogg 1012")
-    plt.xlabel("anomaly in m", fontsize=font_label_scale)
-    plt.ylabel("amount of data points", fontsize=font_label_scale)
-    plt.text(-3000, 8 * 10 ** 5, "Deeper than calculation", color="blue", fontsize=font_text_scale)
-    plt.text(2000, 8 * 10 ** 5, "Shallower than calculation", color="red", fontsize=font_text_scale)
+    fig = plt.figure(figsize=(15, 8))
+    ax1 = fig.add_subplot()
+    ax2 = ax1.twiny()
+    plt.scatter(data.grid1[~mask_positive], data.grid2[~mask_positive], s=0.01, color="blue")
+    plt.scatter(data.grid1[mask_positive], data.grid2[mask_positive], s=0.01, color="green")    # above sea level
+    plt.plot(optimum_line, optimum_line, color="red")
+    plt.gca().invert_xaxis()
+    plt.title("Real Depth Over Calculated Depth", fontsize=28)
+    plt.text(-2000, -10000, "GEBCO_2020 Grid, Ogg 2012")
+    ax1.set_xlabel("calculated depth", fontsize=16)
+    ax1.set_ylabel("real depth", fontsize=16)
+
+    '''age_ticks = np.linspace(0, 100, 5)
+    ax2.set_xlim(ax1.get_xlim())
+    #ax2.set_xticks(data.grid1)
+    ax2.set_xticks(age_ticks)
+    age_values = np.linspace(0, 100, num=5)
+    ax2.set_xticklabels([f"{age:.0f} Ma" for age in age_values])'''
+    # Custom legend markers for larger dots
+    legend_elements = [
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label="Below Sea Level"),
+        Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label="Above Sea Level"),
+        Line2D([0], [0], color='red', linewidth=2, label="calc. depth = real depth")
+    ]
+    plt.legend(handles=legend_elements, loc="upper right", fontsize=14)
     plt.show()
 
+
+# depth anomaly histogram-----------------------------------------------------------------------------------------------
+def depth_anomaly_hist(size, bins):
+    if data.accuracy == 2:  # how many data points do we have
+        y_factor = 10
+    else:
+        y_factor = 1
+    y_max = int(20000000 / bins) * y_factor
+    fig3, ax = plt.subplots(figsize=(size, size))
+    relative_font_size = fig3.get_size_inches()[0] * 0.9  # gets font size relative to figure size
+    plt.axvline(x=10, alpha=0.4, color='red', linestyle='--', linewidth=2)
+    plt.axvline(x=-10, alpha=0.4, color='blue', linestyle='--', linewidth=2)
+    plt.hist(data.grid_point_diffs, bins=bins, alpha=1, range=(-2000, 6000), color=(0.9, 0.5, 0.1))
+    plt.tick_params(labelsize=relative_font_size * font_axes_scale)
+    x_ticks = np.linspace(-2000, 6000, num=5)  # Choose appropriate tick positions
+    ax.set_xticks(x_ticks)
+    ax.set_xticklabels([f"{int(tick * 0.001)} km" for tick in x_ticks])  # Convert to km and format
+    y_ticks = np.linspace(y_max / 4, y_max, num=4)  # Choose appropriate tick positions
+    ax.set_yticks(y_ticks)
+    ax.set_yticklabels([f"{int(tick * 0.001)}k" for tick in y_ticks])  # Convert to km and format
+    plt.title("Quantitative distribution \nof depth anomaly", fontsize=relative_font_size * font_header_scale, pad=10)
+    plt.text(0.98, 0.98, "GEBCO_2020 Grid, Ogg 2012",
+             fontsize=relative_font_size * font_text_scale,
+             ha="right", va="top", transform=ax.transAxes)
+    plt.xlabel("calculated depth - bathymetric depth", fontsize=relative_font_size * font_label_scale)
+    ax.text(0.02, 0.6, "deeper than\ncalculated",
+            fontsize=relative_font_size * font_text_scale, color='b',
+            ha="left", va="bottom", transform=ax.transAxes)
+    ax.text(0.52, 0.6, "shallower than\ncalculated",
+            fontsize=relative_font_size * font_text_scale, color='r',
+            ha="left", va="bottom", transform=ax.transAxes)
+    plt.ylabel("Amount of data points", fontsize=relative_font_size * font_label_scale)
+    plt.show()

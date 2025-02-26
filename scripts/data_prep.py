@@ -2,7 +2,9 @@ from scipy.io import netcdf_file
 from scripts import functions
 
 path = "grids/"
-accuracy = 2  # how many minutes° are one grid point (2 or 6)
+accuracy = 6  # how many minutes° are one grid point (2 or 6)
+map_center = 200    # central longitude of plotted map
+max_ridge_age = 0.01    # in Ma, for calculating avr ridge depth
 age_file = netcdf_file(path + f'age.2020.1.GTS2012.{accuracy}m.grd', 'r', mmap=False)
 bathymetry_file = netcdf_file(path + f'GRIDONE_2D_2008_{accuracy}m.nc', mmap=False)
 #print(bathymetry_file.variables.keys())
@@ -29,8 +31,8 @@ bathymetry_file.close()
 # new_lat, new_lon, new_grid = functions.compress_grid(b_grid, 2)
 #write_to_netcdf("GRIDONE_2D_2008_2m.nc", new_lat, new_lon, new_grid)
 
-b_lon_shift, b_grid_shift = functions.shift_longitude(b_lon, b_grid, 200)  # shift lon to new center
-a_lon_shift, a_grid_shift = functions.shift_longitude(a_lon, a_grid, 200)  # shift lon to new center
+b_lon_shift, b_grid_shift = functions.shift_longitude(b_lon, b_grid, map_center)  # shift lon to new center
+a_lon_shift, a_grid_shift = functions.shift_longitude(a_lon, a_grid, map_center)  # shift lon to new center
 
 # adjust grids
 a_lat_trim, a_lon_trim_shift, a_grid_trim_shift = functions.trim_grid(a_lat, a_lon_shift, a_grid_shift,
@@ -38,8 +40,11 @@ a_lat_trim, a_lon_trim_shift, a_grid_trim_shift = functions.trim_grid(a_lat, a_l
 b_grid_shift_ocean = functions.exclude_continental_plate(a_grid_trim_shift, b_grid_shift)  # make continents NaN
 
 # calculate difference:
-avr_ridge_depth = functions.calc_ridge_depth(a_grid_trim_shift, b_grid_shift_ocean, 0.01)
+avr_ridge_depth = functions.calc_ridge_depth(a_grid_trim_shift, b_grid_shift_ocean, max_ridge_age)
 d_grid = functions.age_to_depth(a_grid_trim_shift, avr_ridge_depth)
 depth_anomaly = abs(d_grid) - abs(b_grid_shift_ocean)  # array shows how much calculated depth deviates from actual depth
 depth_anomaly_abs = abs(depth_anomaly)
 land_grid = functions.get_land_grid(b_grid_shift)
+
+# single grid point comparison (for histogram)
+grid_point_diffs, grid1, grid2 = functions.compare_grid_points(d_grid, b_grid_shift_ocean)

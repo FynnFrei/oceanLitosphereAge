@@ -1,8 +1,6 @@
 import numpy as np
 from scipy.io import netcdf_file
 import os
-from matplotlib import pyplot as plt
-from matplotlib.lines import Line2D
 
 
 # the theory of cooling oceanic litosphere in geo3 script1 P. 124
@@ -119,30 +117,6 @@ def exclude_continental_plate(grid1, grid2):
     return grid2_ocean
 
 
-'''
-def shift_longitude(lon, grid, new_center):
-    # shift center to wherever you want
-    cut_deg = new_center
-    if 0 <= new_center <= 180:
-        cut_deg -= 180
-    elif -180 <= new_center < 0:
-        cut_deg += 180
-    else:
-        raise ValueError("ERROR: Choose value between -180 and 180 for new_center!")
-    # TODO fix the index problem
-    right_lon = lon[(lon >= cut_deg) | (lon < -180+cut_deg)]
-    left_lon = lon[(lon < cut_deg) | (lon > 180+cut_deg)]
-    new_lon = np.concatenate((right_lon, left_lon))
-
-    right_idx = np.where((lon >= cut_deg) | (lon < -180+cut_deg))[0]
-    left_idx = np.where((lon < cut_deg) | (lon > 180+cut_deg))[0]
-    new_idx = np.concatenate((right_idx, left_idx))
-
-    new_grid = grid[:, new_idx]
-    return new_lon, new_grid
-'''
-
-
 def shift_longitude(lon, grid, new_center):
     shift = - (len(lon)/360) * new_center
     shifted_lon = np.roll(lon, shift)
@@ -161,31 +135,12 @@ def trim_grid(lat, lon, grid, ref_grid):
     return new_lat, new_lon, new_grid
 
 
-def plot_scatter(grid1, grid2):
+def compare_grid_points(grid1, grid2):
     grid1_flat = np.reshape(grid1, -1)
     grid2_flat = np.reshape(grid2, -1)
     mask_nan = ~np.isnan(grid1_flat) & ~np.isnan(grid2_flat)
     grid1_flat_clean = grid1_flat[mask_nan]
     grid2_flat_clean = grid2_flat[mask_nan]
-    mask_positive = grid2_flat_clean > 0
-
-    optimum_line = np.linspace(-8000, -2000, 2)
-
-    fig3 = plt.figure(figsize=(22, 12))
-    plt.scatter(grid1_flat_clean[~mask_positive], grid2_flat_clean[~mask_positive], s=0.0001, color="blue")
-    plt.scatter(grid1_flat_clean[mask_positive], grid2_flat_clean[mask_positive], s=0.0001, color="green")    # above sea level
-    plt.plot(optimum_line, optimum_line, color="red")
-    plt.gca().invert_xaxis()
-    plt.title("Real Depth Over Calculated Depth (low detail)", fontsize=28)
-    plt.text(-2000, -10000, "GEBCO_2020 Grid, Ogg 2012")
-    plt.xlabel("calculated depth", fontsize=16)
-    plt.ylabel("real depth", fontsize=16)
-    # Custom legend markers for larger dots
-    legend_elements = [
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='blue', markersize=10, label="Below Sea Level"),
-        Line2D([0], [0], marker='o', color='w', markerfacecolor='green', markersize=10, label="Above Sea Level"),
-        Line2D([0], [0], color='red', linewidth=2, label="calc. depth = real depth")
-    ]
-    plt.legend(handles=legend_elements, loc="upper right", fontsize=14)
-    plt.show()
+    diff = grid2_flat_clean - grid1_flat_clean
+    return diff, grid1_flat_clean, grid2_flat_clean
 
