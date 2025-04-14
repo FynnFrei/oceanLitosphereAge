@@ -6,7 +6,8 @@ if __name__ == "__main__":
     print("main script")
 
 
-#plotting.depth_abs_anomaly_map(9)
-#plotting.depth_anomaly_map(9)
-#plotting.depth_anomaly_hist(9, 500)
-plotting.depth_anomaly_scatter()
+# plotting.example_map(9)
+# plotting.depth_abs_anomaly_map(3)
+plotting.depth_anomaly_map(3)
+# plotting.depth_anomaly_hist(3.5, 500)
+# plotting.depth_anomaly_scatter(4)

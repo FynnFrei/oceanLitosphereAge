@@ -1,5 +1,6 @@
 from scipy.io import netcdf_file
 from scripts import functions
+from scripts.functions import depth_to_age
 
 path = "grids/"
 accuracy = 6  # how many minutes° are one grid point (2 or 6)
@@ -7,7 +8,7 @@ map_center = 200    # central longitude of plotted map
 max_ridge_age = 0.01    # in Ma, for calculating avr ridge depth
 age_file = netcdf_file(path + f'age.2020.1.GTS2012.{accuracy}m.grd', 'r', mmap=False)
 bathymetry_file = netcdf_file(path + f'GRIDONE_2D_2008_{accuracy}m.nc', mmap=False)
-#print(bathymetry_file.variables.keys())
+# print(age_file.variables.keys())
 
 # dataset a -> age_file
 a_lon_var = age_file.variables['lon']
@@ -48,3 +49,5 @@ land_grid = functions.get_land_grid(b_grid_shift)
 
 # single grid point comparison (for histogram)
 grid_point_diffs, grid1, grid2 = functions.compare_grid_points(d_grid, b_grid_shift_ocean)
+
+# print(f'{depth_to_age(-8000, avr_ridge_depth)} Ma old')   # to get age from depth (doublecheck)

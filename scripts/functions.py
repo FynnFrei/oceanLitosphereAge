@@ -111,6 +111,22 @@ def age_to_depth(grid, d_0):
     return d
 
 
+def depth_to_age(d, d_0):
+    alpha = 2 * 10 ** -5  # coefficient of thermal expansion in 1/K
+    T_m = 1570  # mantle temperature in K (e.g. Vl.1, P.115)
+    rho_m = 3300  # initial density of the hot mantle at T_m in Kg/m^3 (example value)
+    rho_w = 1030  # density of water in kg/m^3
+    kappa = 10 ** -6  # thermal diffusivity in m^2/s (data from Vl.1, P. 115)
+    # d_0 is average ocean ridge depth
+    # d is depth
+    # t is time in Ma
+
+    t_in_sec = (np.pi / kappa) * ((d_0 - d) ** 2) / ((2 * alpha * rho_m * T_m / (rho_m - rho_w)) ** 2)
+    t = t_in_sec / (3600 * 24 * 365 * 1000000)  # t in Ma instead of sec
+    return t
+
+
+
 def exclude_continental_plate(grid1, grid2):
     # replaces all grid points where continental plate exists by nan -> oceanic plate remains
     grid2_ocean = np.where(np.isnan(grid1), np.nan, grid2)
