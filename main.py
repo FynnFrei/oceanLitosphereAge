@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
 
 # plotting.example_map(9)
-# plotting.depth_abs_anomaly_map(3)
-plotting.depth_anomaly_map(3)
-# plotting.depth_anomaly_hist(3.5, 500)
-# plotting.depth_anomaly_scatter(4)
+#plotting.depth_abs_anomaly_map(10)
+plotting.depth_anomaly_map(9)
+# plotting.depth_anomaly_hist(9, 500)
+#plotting.depth_anomaly_scatter(9)

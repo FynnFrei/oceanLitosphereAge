@@ -5,6 +5,7 @@ from matplotlib import pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib.font_manager as fm
 from matplotlib.lines import Line2D
+from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 
 # TODO all_maps typo and scales
@@ -18,6 +19,36 @@ montserrat_regular = fm.FontProperties(fname=font_path_regular).get_name()  # Ge
 # Set Montserrat as the default font
 plt.rcParams["font.family"] = montserrat_regular
 
+
+# colormaps-------------------------------------------------------------------------------------------------------------
+#custom colormap:
+cdict1 = {
+    'red': (
+        (0.0, 0.0, 0.0),
+        (0.125, 0.0, 0.0),
+        (0.48, 1.0, 1.0),
+        (0.52, 1.0, 1.0),
+        (0.875, 1.0, 1.0),
+        (1.0, 0.5, 0.5),
+    ),
+    'green': (
+        (0.0, 0.0, 0.0),
+        (0.125, 0.0, 0.0),
+        (0.48, 1.0, 1.0),
+        (0.52, 1.0, 1.0),
+        (0.875, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+    ),
+    'blue': (
+        (0.0, 0.5, 0.5),
+        (0.125, 1.0, 1.0),
+        (0.48, 1.0, 1.0),
+        (0.52, 1.0, 1.0),
+        (0.875, 0.0, 0.0),
+        (1.0, 0.0, 0.0),
+    )
+}
+cmap0 = LinearSegmentedColormap('BlueRed1', cdict1)
 cmap1 = plt.cm.viridis
 cmap2 = plt.cm.turbo_r
 cmap3 = plt.cm.seismic
@@ -25,15 +56,16 @@ cmap_reds = plt.cm.Reds
 cmap_black = mcolors.ListedColormap([0, 0, 0, 0.9])
 continental_color = (0.5, 0.5, 0.5)
 transparent = (0, 0, 0, 0)
+cmap0.set_bad(color=continental_color)  # gives NaN pixels specific color
 cmap1.set_bad(color=continental_color)  # gives NaN pixels specific color
 cmap2.set_bad(color=continental_color)
 cmap3.set_bad(color=continental_color)
 cmap_reds.set_bad(color=continental_color)
 cmap_black.set_bad(color=transparent)
-font_axes_scale = 1.8  # axes values
+font_axes_scale = 1.6  # axes values
 font_header_scale = 3.4  # factor that scales the header font to the standard font size
-font_label_scale = 2.5  # labels, source(GEBCO)
-font_text_scale = 2  # normal text, description
+font_label_scale = 2.2  # labels, source(GEBCO)
+font_text_scale = 1.8  # normal text, description
 
 
 # all maps-------------------------------------------------------------------------------------------------------------
@@ -173,7 +205,8 @@ def depth_anomaly_map(size):
         data.depth_anomaly,
         extent=[min_lon, max_lon, min_lat, max_lat],
         origin="lower",
-        cmap=cmap3,
+        cmap=cmap0,
+        #norm=TwoSlopeNorm(vmin=-2000, vcenter=0, vmax=2000),
         vmin=-4000,
         vmax=4000,
         aspect=1
@@ -188,7 +221,7 @@ def depth_anomaly_map(size):
         alpha=0.3,
         aspect=1
     )
-    relative_font_size = fig2.get_size_inches()[0] * 0.78  # gets font size relative to figure size
+    relative_font_size = fig2.get_size_inches()[0] * 0.65  # gets font size relative to figure size
     plt.title("Sea Floor Depth Difference between \nCalculation and Bathymetry", fontsize=relative_font_size * font_header_scale,
               pad=10)
 
@@ -210,20 +243,20 @@ def depth_anomaly_map(size):
     cbar.set_ticklabels([f"{tick * 0.001}km" for tick in cbar_ticks])  # Convert to km and format
     cbar.ax.tick_params(labelsize=relative_font_size * font_axes_scale)  # modify font size of cbar values
     # cbar.set_label(label="Δ Depth in m", fontsize=relative_font_size*font_label_scale)
-    cbar.ax.text(-relative_font_size * 0.3, 0, "deeper than",
+    cbar.ax.text(-relative_font_size * 0.14, 0, "deeper than",
                  fontsize=relative_font_size * font_text_scale,
                  rotation=90, ha="center", va="bottom", transform=cbar.ax.transAxes)
-    cbar.ax.text(-relative_font_size * 0.1, 0, "calculated",
+    cbar.ax.text(-relative_font_size * 0.05, 0, "calculated",
                  fontsize=relative_font_size * font_text_scale,
                  rotation=90, ha="center", va="bottom", transform=cbar.ax.transAxes)
-    cbar.ax.text(-relative_font_size * 0.3, 1, "shallower than",
+    cbar.ax.text(-relative_font_size * 0.14, 1, "shallower than",
                  fontsize=relative_font_size * font_text_scale,
                  rotation=90, ha="center", va="top", transform=cbar.ax.transAxes)
-    cbar.ax.text(-relative_font_size * 0.1, 1, "calculated",
+    cbar.ax.text(-relative_font_size * 0.05, 1, "calculated",
                  fontsize=relative_font_size * font_text_scale,
                  rotation=90, ha="center", va="top", transform=cbar.ax.transAxes)
     plt.grid()
-    plt.text(-170, -85, "GEBCO_2020 Grid, Ogg 2012", fontsize=relative_font_size * font_label_scale)
+    plt.text(-170, -85, "GEBCO_2020 Grid, Ogg 2012", fontsize=relative_font_size * font_text_scale)
     plt.show()
 
 
@@ -267,10 +300,10 @@ def depth_abs_anomaly_map(size):
     cbar = plt.colorbar(depth_img, ax=ax, fraction=0.0232)
     cbar_ticks = np.linspace(0, 4000, num=5)  # Choose appropriate tick positions
     cbar.set_ticks(cbar_ticks)
-    cbar.set_ticklabels([f"{tick * 0.001}km" for tick in cbar_ticks])  # Convert to km and format
+    cbar.set_ticklabels([f"{tick * 0.001}" for tick in cbar_ticks])  # Convert to km and format
     cbar.ax.tick_params(labelsize=relative_font_size * font_axes_scale)  # modify font size of cbar values
     # cbar.set_label(label="Δ Depth in m", fontsize=relative_font_size*font_label_scale)
-    cbar.ax.text(-relative_font_size * 0.2, 0.5, "Δ Depth",
+    cbar.ax.text(-relative_font_size * 0.2, 0.5, "Depth anomaly in km",
                  fontsize=relative_font_size * font_label_scale,
                  rotation=90, ha="center", va="center", transform=cbar.ax.transAxes)
     plt.grid()
@@ -281,10 +314,13 @@ def depth_abs_anomaly_map(size):
 # functions.plot_scatter(d_grid, b_grid_shift_ocean)
 def depth_anomaly_scatter(size):
     mask_positive = data.grid2 > 0  # where bathymetry is > 0 -> land
+    mask_negative = data.grid2 < 0  # where bathymetry is subsurface
 
     optimum_line = np.linspace(-8500, -2500, 2)
     x_depth_max = -8500
     x_depth_min = data.avr_ridge_depth
+    y_depth_max = 0
+    y_depth_min = -10000
     x_depth_max_tick = -8000
     x_depth_min_tick = -3000
     num_of_x_ticks = 6
@@ -304,14 +340,15 @@ def depth_anomaly_scatter(size):
     plt.plot(optimum_line, optimum_line, color="red", linewidth=1.5)
 
     ax1.set_xlim(x_depth_min, x_depth_max)
+    ax1.set_ylim(y_depth_min, y_depth_max)
     ax1.set_xticks(ax1_ticks)  # sets x_depth-axis labels
     plt.title("Bathymetric over calculated depth", fontsize=relative_font_size*font_header_scale,
               pad=int(relative_font_size))
-    plt.text(0.98, 0.98, "GEBCO_2020 Grid, Ogg 2012",
+    plt.text(0.98, 0.02, "GEBCO_2020 Grid, Ogg 2012",
              fontsize=relative_font_size*font_text_scale,
-             ha="right", va="top", transform=ax1.transAxes)
-    ax1.set_xlabel("Calculated depth (in km)", fontsize=relative_font_size*font_label_scale)
-    ax1.set_ylabel("Bathymetric depth (in km)", fontsize=relative_font_size*font_label_scale)
+             ha="right", va="bottom", transform=ax1.transAxes)
+    ax1.set_xlabel("Calculated depth in m", fontsize=relative_font_size*font_label_scale)
+    ax1.set_ylabel("Bathymetric depth in m", fontsize=relative_font_size*font_label_scale)
 
     # Age axis
     ax2 = ax1.twiny()
@@ -320,7 +357,7 @@ def depth_anomaly_scatter(size):
     ax2.set_xticklabels([f"{age:.1f}" for age in age_values])
     plt.tick_params(labelsize=relative_font_size * font_axes_scale)
     ax1.tick_params(labelsize=relative_font_size * font_axes_scale)
-    ax2.set_xlabel("Age (in million years)", fontsize=relative_font_size*font_label_scale)
+    ax2.set_xlabel("Age in Ma", fontsize=relative_font_size*font_label_scale)
     '''
     # Inset colorbar
     cax = inset_axes(ax1, width="30%", height="4%", loc="lower right", borderpad=2)
@@ -331,12 +368,12 @@ def depth_anomaly_scatter(size):
     '''
 
     cb = fig.colorbar(hb, ax=ax1)
-    cb.set_label("Density of data points", fontsize=relative_font_size*font_label_scale)
+    cb.set_label("Hit count per hexagon", fontsize=relative_font_size*font_label_scale)
     cb.ax.tick_params(labelsize=relative_font_size*font_axes_scale)
 
     # legend
     legend_elements = [
-        Line2D([0], [0], color='orange', linestyle='--', linewidth=1, label="sea surface"),
+        #Line2D([0], [0], color='orange', linestyle='--', linewidth=1, label="sea surface"),
         Line2D([0], [0], color='red', linewidth=1.5, label="calc. depth = bath. depth")
     ]
     ax1.legend(
@@ -359,13 +396,12 @@ def depth_anomaly_hist(size, bins):
     ratio = size * 3/3
     fig3, ax = plt.subplots(figsize=(ratio, size))
     relative_font_size = fig3.get_size_inches()[0] * 0.9  # gets font size relative to figure size
-    plt.axvline(x=10, alpha=0.4, color='red', linestyle='--', linewidth=2)
-    plt.axvline(x=-10, alpha=0.4, color='blue', linestyle='--', linewidth=2)
+    plt.axvline(x=0, alpha=0.4, color='black', linestyle='--', linewidth=2)
     plt.hist(data.grid_point_diffs, bins=bins, alpha=1, range=(-2000, 6000), color=(0.9, 0.5, 0.1))
     plt.tick_params(labelsize=relative_font_size * font_axes_scale)
     x_ticks = np.linspace(-2000, 6000, num=5)  # Choose appropriate tick positions
     ax.set_xticks(x_ticks)
-    ax.set_xticklabels([f"{int(tick * 0.001)} km" for tick in x_ticks])  # Convert to km and format
+    ax.set_xticklabels([f"{int(tick * 0.001)}" for tick in x_ticks])  # Convert to km and format
     y_ticks = np.linspace(y_max / 4, y_max, num=4)  # Choose appropriate tick positions
     ax.set_yticks(y_ticks)
     ax.set_yticklabels([f"{int(tick * 0.001)}k" for tick in y_ticks])  # Convert to km and format
@@ -373,14 +409,14 @@ def depth_anomaly_hist(size, bins):
     plt.text(0.98, 0.98, "GEBCO_2020 Grid, Ogg 2012",
              fontsize=relative_font_size * font_text_scale,
              ha="right", va="top", transform=ax.transAxes)
-    plt.xlabel("Calculated depth - Bathymetric depth", fontsize=relative_font_size * font_label_scale)
+    plt.xlabel("Calculated depth - Bathymetric depth in km", fontsize=relative_font_size * font_label_scale)
     ax.text(0.02, 0.6, "Deeper than\ncalculated",
             fontsize=relative_font_size * font_text_scale, color='b',
             ha="left", va="bottom", transform=ax.transAxes)
     ax.text(0.52, 0.6, "Shallower than\ncalculated",
             fontsize=relative_font_size * font_text_scale, color='r',
             ha="left", va="bottom", transform=ax.transAxes)
-    plt.ylabel("Amount of data points", fontsize=relative_font_size * font_label_scale)
+    plt.ylabel("Amount of data points in #", fontsize=relative_font_size * font_label_scale)
     plt.show()
 
 '''
