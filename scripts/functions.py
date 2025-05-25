@@ -140,15 +140,25 @@ def shift_longitude(lon, grid, new_center):
     return shifted_lon, shifted_grid
 
 
-def trim_grid(lat, lon, grid, ref_grid):
+def trim_grid_to_ref(lat, lon, grid, ref_grid):
     # cut off the last rows and columns for equal shape
     trim_lat = len(grid[0]) - len(ref_grid[0])
     trim_lon = len(grid[1]) - len(ref_grid[1])
     new_lat = lon[trim_lat:]
     new_lon = lat[:-trim_lon]
     new_grid = grid[trim_lat:, :-trim_lon]  # slice a_grid to same shape as b_grid
-    print(f"New shape: {np.shape(new_grid)}")
+    #print(f"New shape: {np.shape(new_grid)}")
     return new_lat, new_lon, new_grid
+
+
+def trim_grid(grid1, lat_center, lon_center, size):
+    y_center = lat_center * 10 + 900
+    x_center = lon_center * 10 - 200
+    y_size = size * 5
+    x_size = size * 10
+    new_grid1 = grid1[y_center-y_size:y_center+y_size, x_center-x_size:x_center+x_size]
+    print(f"New shape: {np.shape(new_grid1)}")
+    return new_grid1
 
 
 def compare_grid_points(grid1, grid2):
@@ -160,3 +170,10 @@ def compare_grid_points(grid1, grid2):
     diff = grid2_flat_clean - grid1_flat_clean
     return diff, grid1_flat_clean, grid2_flat_clean
 
+
+def cumulative_function(grid, start, end, step_size):
+    # makes some kind of integral from histogram data from start to end
+    x_values = np.arange(start, end + step_size, step_size)         # x-Axis list for cumulative summation
+    n = len(grid)                                      # get amount of data points
+    y_values = [(sum(val <= x for val in grid)/ n) for x in x_values]  # cumulative integral
+    return x_values, y_values

@@ -1,6 +1,7 @@
 from scipy.io import netcdf_file
 from scripts import functions
 from scripts.functions import depth_to_age
+import numpy as np
 
 path = "grids/"
 accuracy = 6  # how many minutes° are one grid point (2 or 6)
@@ -36,18 +37,29 @@ b_lon_shift, b_grid_shift = functions.shift_longitude(b_lon, b_grid, map_center)
 a_lon_shift, a_grid_shift = functions.shift_longitude(a_lon, a_grid, map_center)  # shift lon to new center
 
 # adjust grids
-a_lat_trim, a_lon_trim_shift, a_grid_trim_shift = functions.trim_grid(a_lat, a_lon_shift, a_grid_shift,
+a_lat_trim, a_lon_trim_shift, a_grid_trim_shift = functions.trim_grid_to_ref(a_lat, a_lon_shift, a_grid_shift,
                                                                       b_grid)  # trim to same shape
 b_grid_shift_ocean = functions.exclude_continental_plate(a_grid_trim_shift, b_grid_shift)  # make continents NaN
 
 # calculate difference:
 avr_ridge_depth = functions.calc_ridge_depth(a_grid_trim_shift, b_grid_shift_ocean, max_ridge_age)
-d_grid = functions.age_to_depth(a_grid_trim_shift, avr_ridge_depth)
+d_grid = functions.age_to_depth(a_grid_trim_shift, avr_ridge_depth)     # dataset d -> calculated depth
 depth_anomaly = abs(d_grid) - abs(b_grid_shift_ocean)  # array shows how much calculated depth deviates from actual depth
 depth_anomaly_abs = abs(depth_anomaly)
 land_grid = functions.get_land_grid(b_grid_shift)
 
-# single grid point comparison (for histogram)
-grid_point_diffs, grid1, grid2 = functions.compare_grid_points(d_grid, b_grid_shift_ocean)
 
-# print(f'{depth_to_age(-8000, avr_ridge_depth)} Ma old')   # to get age from depth (doublecheck)
+'''print(f'{depth_to_age(-8000, avr_ridge_depth)} Ma old')   # to get age from depth (doublecheck)'''
+
+
+
+
+# Glossar---------------------------------------------------------------------------------------------------------------
+# b_            bathymetric data
+# a_            age data
+# d_            calculated depth data
+# shift         new longitude center (shifted x-axis)
+# trim          cut edges of grid to same shape of all grids
+# ocean         only ocean lithosphere has values - continents are NaN
+# clean         without NaN
+# window        only a window of the whole world map (e.g. only northern hemisphere, western part)
