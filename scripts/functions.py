@@ -151,11 +151,17 @@ def trim_grid_to_ref(lat, lon, grid, ref_grid):
     return new_lat, new_lon, new_grid
 
 
-def trim_grid(grid1, lat_center, lon_center, size):
-    y_center = lat_center * 10 + 900
-    x_center = lon_center * 10 - 200
-    y_size = size * 5
-    x_size = size * 10
+def trim_grid(grid1, lat_center, lon_center, size, accuracy):
+    if accuracy == 2:
+        y_center = lat_center * 30 + 2700
+        x_center = lon_center * 30 - 600
+        y_size = size * 15
+        x_size = size * 30
+    else:
+        y_center = lat_center * 10 + 900
+        x_center = lon_center * 10 - 200
+        y_size = size * 5
+        x_size = size * 10
     new_grid1 = grid1[y_center-y_size:y_center+y_size, x_center-x_size:x_center+x_size]
     print(f"New shape: {np.shape(new_grid1)}")
     return new_grid1

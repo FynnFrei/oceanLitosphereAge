@@ -50,11 +50,54 @@ cdict1 = {
         (1.0, 0.0, 0.0),
     )
 }
+reds_segmentdata = {
+    'red': (
+        (0.0,   1.0, 1.0),    # white
+        (0.125, 1.0, 1.0),
+        (0.25,  0.996, 0.996),
+        (0.375, 0.988, 0.988),
+        (0.5,   0.988, 0.988),
+        (0.625, 0.984, 0.984),
+        (0.75,  0.937, 0.937),
+        (0.875, 0.843, 0.843),
+        (1.0,   0.403, 0.403),
+    ),
+    'green': (
+        (0.0,   1.0, 1.0),
+        (0.125, 0.902, 0.902),
+        (0.25,  0.816, 0.816),
+        (0.375, 0.733, 0.733),
+        (0.5,   0.604, 0.604),
+        (0.625, 0.471, 0.471),
+        (0.75,  0.318, 0.318),
+        (0.875, 0.188, 0.188),
+        (1.0,   0.0,   0.0),
+    ),
+    'blue': (
+        (0.0,   1.0, 1.0),
+        (0.125, 0.800, 0.800),
+        (0.25,  0.643, 0.643),
+        (0.375, 0.518, 0.518),
+        (0.5,   0.404, 0.404),
+        (0.625, 0.282, 0.282),
+        (0.75,  0.220, 0.220),
+        (0.875, 0.153, 0.153),
+        (1.0,   0.051, 0.051),
+    )
+}
+custom_Reds = LinearSegmentedColormap('CustomReds', reds_segmentdata)
+new_seismic_colors = (
+    plt.cm.Blues_r(np.linspace(-0.15, 1.05, 128)),
+    np.array([1, 1, 1, 1]),     # one white value in the center
+    custom_Reds(np.linspace(0,1,128))
+)
+colors_combined = np.vstack(new_seismic_colors)
 cmap0 = LinearSegmentedColormap('BlueRed1', cdict1)
 cmap1 = plt.cm.viridis
 cmap2 = plt.cm.turbo_r
 cmap3 = plt.cm.seismic
 cmap_reds = plt.cm.Reds
+cmap_new_seismic = LinearSegmentedColormap.from_list('BlueWhiteRed', colors_combined)
 cmap_black = mcolors.ListedColormap([0, 0, 0, 0.9])
 continental_color = (0.5, 0.5, 0.5)
 transparent = (0, 0, 0, 0)
@@ -63,10 +106,11 @@ cmap1.set_bad(color=continental_color)  # gives NaN pixels specific color
 cmap2.set_bad(color=continental_color)
 cmap3.set_bad(color=continental_color)
 cmap_reds.set_bad(color=continental_color)
+cmap_new_seismic.set_bad(color=continental_color)
 cmap_black.set_bad(color=transparent)
-font_axes_scale = 1.5  # axes values
+font_axes_scale = 1.4  # axes values
 font_header_scale = 3.4  # factor that scales the header font to the standard font size
-font_label_scale = 2.1  # labels
+font_label_scale = 1.9  # labels
 font_text_scale = 1.7  # normal text, description, source(GEBCO)
 
 
@@ -199,8 +243,8 @@ def example_map(size):
 def depth_anomaly_map(size):
     ratio = size * 16 / 9
 
-    anomaly_grid_window = functions.trim_grid(data.depth_anomaly, 40, 140, 40)
-    land_grid_window = functions.trim_grid(data.land_grid, 40, 140, 40)
+    anomaly_grid_window = functions.trim_grid(data.depth_anomaly, 0, 200, 180, data.accuracy)
+    land_grid_window = functions.trim_grid(data.land_grid, 0, 200, 180, data.accuracy)
 
     fig2, ax = plt.subplots(figsize=(ratio, size))
     min_lon = data.a_lon_shift.min()
@@ -211,7 +255,7 @@ def depth_anomaly_map(size):
         anomaly_grid_window,
         extent=[min_lon, max_lon, min_lat, max_lat],
         origin="lower",
-        cmap=cmap0,
+        cmap=cmap_new_seismic,
         #norm=TwoSlopeNorm(vmin=-2000, vcenter=0, vmax=2000),
         vmin=-4000,
         vmax=4000,
@@ -231,12 +275,12 @@ def depth_anomaly_map(size):
     '''plt.title("Sea Floor Depth Difference between \nCalculation and Bathymetry", fontsize=relative_font_size * font_header_scale,
               pad=10)'''
 
-    lon_ticks = [-180, -90, 0, 90, 180]
-    lon_labels = ['100°E', '120°E', '140°E', '160°E', '180°E']
+    lon_ticks = [-140, -80, -20, 40, 100, 160]
+    lon_labels = ['60°E', '120°E', '180°', '120°W', '60°W', '0°']
     ax.set_xticks(lon_ticks)
     ax.set_xticklabels(lon_labels)
-    lat_ticks = [-90, -45, 0, 45, 90]
-    lat_labels = ['20°N', '30°N', '40°N', '50°N', '60°N']
+    lat_ticks = [-75, -50, -25, 0, 25, 50, 75]
+    lat_labels = ['75°S', '50°S', '25°S', '0°', '25°N', '50°N', '75°N']
     ax.set_yticks(lat_ticks)
     ax.set_yticklabels(lat_labels)
 
@@ -261,9 +305,9 @@ def depth_anomaly_map(size):
     cbar.ax.text(-relative_font_size * 0.05, 1, "shallower than calculated",
                  fontsize=relative_font_size * font_text_scale,
                  rotation=90, ha="center", va="top", transform=cbar.ax.transAxes)
-    plt.grid()
-    plt.text(-170, -85, "GEBCO_2020 Grid, Ogg 2012", fontsize=relative_font_size * font_text_scale)
-    plt.savefig("plots/depth_anomaly_map.png", dpi=300, bbox_inches='tight')
+    # plt.grid()
+    plt.text(-170, -85, "GEBCO_2020 Grid, Ogg 2012", fontsize=relative_font_size * font_text_scale*0.8)
+    plt.savefig("plots/depth_anomaly_map.png", dpi=600, bbox_inches='tight')
     plt.show()
 
 
@@ -482,8 +526,16 @@ def b_depth_hist(size, x_min, x_max, bins, cumulative=False):
     ratio = size * 3/3
 
     # grid data preparation
+    lon_num = len(data.b_grid_shift_ocean[0])   # 3600
+    lat_num = len(data.b_grid_shift_ocean[:])   # 1800
+    R_equator = 40075
+    pixel_height = R_equator / lon_num
+    lat_idx = np.repeat(np.arange(lat_num), lon_num)
+    lat_val = (- lat_idx + 0.5 * len(data.b_grid_shift_ocean)) / 10
+    lat_area = pixel_height * (2*np.pi*R_equator*np.cos(np.pi*lat_val/180)) / lon_num
     b_1D = np.reshape(data.b_grid_shift_ocean, -1)  # 1D bathymetric grid
-    b_1D_clean = b_1D[~np.isnan(b_1D) & (b_1D < 0)]  # delete NaNs and positive values
+    b_1D_area = np.stack((b_1D, lat_area), axis=1)   # now every grid point contains an area value
+    b_1D_clean = b_1D[~np.isnan(b_1D_area[:, 0]) & (b_1D_area[:, 0] < 0)]  # delete NaNs and positive values
     # statistics
     mean_val = np.mean(b_1D_clean)
     std_dev = np.std(b_1D_clean)

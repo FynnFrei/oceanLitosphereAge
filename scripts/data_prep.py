@@ -4,7 +4,7 @@ from scripts.functions import depth_to_age
 import numpy as np
 
 path = "grids/"
-accuracy = 6  # how many minutes° are one grid point (2 or 6)
+accuracy = 2  # how many minutes° are one grid point (2 or 6)
 map_center = 200    # central longitude of plotted map
 max_ridge_age = 0.01    # in Ma, for calculating avr ridge depth
 age_file = netcdf_file(path + f'age.2020.1.GTS2012.{accuracy}m.grd', 'r', mmap=False)
@@ -18,6 +18,18 @@ a_grid_var = age_file.variables['z']
 a_lon = a_lon_var[:]  # reads longitude values into list
 a_lat = a_lat_var[:]
 a_grid = a_grid_var[:]  # age in Ma
+print(f'grid point: {a_grid[1000][3600]}')
+a = np.array([
+    [10, 20, 30, 1],
+    [40, 50, 60, 2],
+    [70, 80, 90, 3]
+])
+print(len(a[:]))
+y_index = - np.repeat(np.arange(len(a[:])), len(a[0])) + 1
+a_flat = np.reshape(a, -1)
+a_y = np.stack((a_flat, y_index), axis=1)
+print(a_y)
+print(np.cos(90/180*np.pi))
 
 # dataset b -> bathymetry_file
 b_lon_var = bathymetry_file.variables['lon']
