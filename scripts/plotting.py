@@ -8,7 +8,6 @@ from matplotlib.lines import Line2D
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 from scipy.stats import skew, kurtosis
 
-# TODO Denkfehler: Nicht jeder Datenpunkt hat die selbe Fläche (wegen Kugelform der Erde) -> Fläche hängt von Latitude ab. Dadurch sind alle Histogramme verzerrt (Pole überbetont)
 # TODO fix the lon grid shift problem (it always shows 0° in center) right now o do it manually which is lazy code
 # TODO Tiefseegräben identifizieren (Heatmap)
 # TODO map ausschnitt von Tiefseegraben
@@ -403,9 +402,9 @@ def depth_anomaly_scatter(size):
     ax1.set_xticks(ax1_ticks)  # sets x_depth-axis labels
     '''plt.title("Bathymetric over calculated depth", fontsize=relative_font_size*font_header_scale,
               pad=int(relative_font_size))'''
-    plt.text(0.98, 0.02, "GEBCO_2020 Grid, Ogg 2012",
+    '''plt.text(0.98, 0.02, "GEBCO_2020 Grid, Ogg 2012",
              fontsize=relative_font_size*font_text_scale,
-             ha="right", va="bottom", transform=ax1.transAxes)
+             ha="right", va="bottom", transform=ax1.transAxes)'''
     ax1.set_xlabel("Calculated depth in m", fontsize=relative_font_size*font_label_scale)
     ax1.set_ylabel("Bathymetric depth in m", fontsize=relative_font_size*font_label_scale)
 
@@ -448,52 +447,74 @@ def depth_anomaly_scatter(size):
 
 # depth anomaly histogram-----------------------------------------------------------------------------------------------
 def depth_anomaly_hist(size, x_min, x_max, bins, cumulative=False):
-    if data.accuracy == 2:  # how many data points do we have
+    if data.accuracy == 6:  # how many data points do we have
         y_factor = 10
     else:
         y_factor = 1
-    y_max = int(20000000 / bins) * y_factor
+    y_max = int(2500000000 / bins)
     ratio = size * 3/3  # figure dimensions
 
     # single grid point comparison (for histogram)
     grid_point_diffs, grid1, grid2 = functions.compare_grid_points(data.d_grid, data.b_grid_shift_ocean)
+
+    # grid data preparation to area
+    lon_num = len(data.depth_anomaly[0])  # 3600 for accuracy=6
+    lat_num = len(data.depth_anomaly[:])  # 1800
+    U_equator = 40075
+    R_equator = 6378.137  # in km
+    pixel_height = U_equator / lon_num  # height is independent of lat and equal for every pixel
+    lat_idx = np.repeat(np.arange(lat_num), lon_num)
+    lat_val = (- lat_idx + 0.5 * len(data.depth_anomaly)) / (lat_num / 180)
+    pixel_width = 2 * np.pi * R_equator * np.cos(np.pi * lat_val / 180) / lon_num  # width of each pixel
+    pixel_area = pixel_height * pixel_width
+    grid_1D = np.reshape(data.depth_anomaly, -1)  # 1D bathymetric grid
+    grid_1D_area = np.stack((grid_1D, pixel_area), axis=1)  # now every grid point contains an area value
+    grid_1D_clean = grid_1D_area[~np.isnan(grid_1D_area[:, 0])]  # delete NaNs and positive values
     # statistics
-    mean_val = np.mean(grid_point_diffs)
-    std_dev = np.std(grid_point_diffs)
-    skewness = skew(grid_point_diffs)
-    kurt_excess = kurtosis(grid_point_diffs)    # difference to gauss curve
-    kurt_normal =  kurtosis(grid_point_diffs, fisher=False)
+    mean_val = np.average(grid_1D_clean[:, 0], weights=grid_1D_clean[:, 1])
+    std_dev = np.sqrt(np.average((grid_1D_clean[:, 0] - mean_val) ** 2, weights=grid_1D_clean[:, 1]))
+    skewness = np.average((grid_1D_clean[:, 0] - mean_val) ** 3, weights=grid_1D_clean[:, 1]) / (std_dev ** 3)
+    kurt_excess = np.average((grid_1D_clean[:, 0] - mean_val) ** 4, weights=grid_1D_clean[:, 1]) / (
+                std_dev ** 4) - 3  # difference to gauss curve
     stats_text = (
-        f"Mean = {mean_val*0.001:.3f} km\n"
-        f"Std Dev = {std_dev*0.001:.3f} km\n"
+        f"Mean = {mean_val * 0.001:.3f} km\n"
+        f"Std Dev = {std_dev * 0.001:.3f} km\n"
         f"Skewness = {skewness:.3f}\n"
         f"Excess Kurtosis = {kurt_excess:.3f}"
     )
 
+    # Compute histogram data without plotting - this section is for colormap in histogram
+    counts, bin_edges = np.histogram(grid_1D_clean[:,0], weights=grid_1D_clean[:,1], bins=bins, range=(x_min, x_max))
+    # Normalize bin centers for colormap
+    bin_centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
+    norm = plt.Normalize(vmin=-4000, vmax=4000)
+    colors = cmap_new_seismic(norm(bin_centers))
+
     fig3, ax1 = plt.subplots(figsize=(ratio, size))
-    relative_font_size = fig3.get_size_inches()[0] * 0.9  # gets font size relative to figure size
+    relative_font_size = fig3.get_size_inches()[0] * 0.8  # gets font size relative to figure size
     plt.axvline(x=0, alpha=0.4, color='black', linestyle='--', linewidth=2)
-    plt.hist(grid_point_diffs, bins=bins, alpha=1, range=(x_min, x_max), color=(0.8, 0.4, 0.2), edgecolor='black')
+    #plt.hist(grid_point_diffs, bins=bins, alpha=1, range=(x_min, x_max), color=colors, edgecolor='black')
+    plt.bar(bin_edges[:-1], counts, width=np.diff(bin_edges), color=colors, edgecolor='black', align='edge')
     plt.tick_params(labelsize=relative_font_size * font_axes_scale)
     x_ticks = np.linspace(x_min, x_max, num=5)  # Choose appropriate tick positions
     ax1.set_xlim(x_min, x_max+1)
     ax1.set_xticks(x_ticks)
     ax1.set_xticklabels([f"{int(tick * 0.001)}" for tick in x_ticks])  # Convert to km and format
-    y_ticks = np.linspace(y_max / 4, y_max, num=4)  # Choose appropriate tick positions
+    y_ticks = np.linspace(y_max / 5, y_max, num=5)  # Choose appropriate tick positions
     ax1.set_yticks(y_ticks)
-    ax1.set_yticklabels([f"{int(tick * 0.001)}k" for tick in y_ticks])  # Convert to km and format
+    ax1.set_yticklabels([f"{int(tick * 0.000001)}" for tick in y_ticks])  # Convert to km and format
     # plt.title("Quantitative distribution \nof depth anomaly", fontsize=relative_font_size * font_header_scale, pad=10)
-    plt.text(0.98, 0.98, "GEBCO_2020 Grid, Ogg 2012",
+    '''plt.text(0.98, 0.98, "GEBCO_2020 Grid, Ogg 2012",
              fontsize=relative_font_size * font_text_scale,
-             ha="right", va="top", transform=ax1.transAxes)
-    plt.xlabel("Calculated depth - Bathymetric depth in km", fontsize=relative_font_size * font_label_scale)
-    ax1.text(0.1, 0.77, "Deeper than\ncalculated",
-            fontsize=relative_font_size * font_text_scale, color='b',
+             ha="right", va="top", transform=ax1.transAxes)'''
+    plt.xlabel("Depth difference between Calculation and Bathymetry", fontsize=relative_font_size * font_label_scale)
+    ax1.text(0.045, 0.55, "Deeper than\ncalculated",
+            fontsize=relative_font_size * font_text_scale, color=cmap_new_seismic(0.1),
             ha="left", va="bottom", transform=ax1.transAxes)
-    ax1.text(0.35, 0.77, "Shallower than\ncalculated",
-            fontsize=relative_font_size * font_text_scale, color='r',
+    ax1.text(0.55, 0.55, "Shallower than\ncalculated",
+            fontsize=relative_font_size * font_text_scale, color=cmap_new_seismic(0.9),
             ha="left", va="bottom", transform=ax1.transAxes)
-    plt.ylabel("Amount of data points in #", color=(0.8, 0.4, 0.2), fontsize=relative_font_size * font_label_scale)
+    plt.ylabel(r'Area in million km$^2$', color='black', fontsize=relative_font_size * font_label_scale)
     ax1.grid(axis='x')
 
     # second y-axis for cumulative graph
@@ -510,9 +531,10 @@ def depth_anomaly_hist(size, x_min, x_max, bins, cumulative=False):
         ax2.set_yticks(y_tick_vals)
         ax2.set_yticklabels([f"{v * 100:.0f}" for v in y_tick_vals])
         ax2.grid(True)
-    # Dummy plot for legend
+    # plot for legend
     plt.plot([], [], ' ', label=stats_text)
-    plt.legend(loc='center right', fontsize=relative_font_size * font_text_scale)
+    plt.legend(loc='upper right', fontsize=relative_font_size * font_text_scale)
+    plt.savefig("plots/histogram_depthdiff.png", dpi=300, bbox_inches='tight')
     plt.show()
 
 
@@ -522,26 +544,30 @@ def b_depth_hist(size, x_min, x_max, bins, cumulative=False):
         y_factor = 10
     else:
         y_factor = 1
-    y_max = int(20000000 / bins) * y_factor
+    y_max = int(1000000000 / bins) * y_factor
     ratio = size * 3/3
 
-    # grid data preparation
-    lon_num = len(data.b_grid_shift_ocean[0])   # 3600
+    # grid data preparation to area
+    lon_num = len(data.b_grid_shift_ocean[0])   # 3600 for accuracy=6
     lat_num = len(data.b_grid_shift_ocean[:])   # 1800
-    R_equator = 40075
-    pixel_height = R_equator / lon_num
+    U_equator = 40075
+    R_equator = 6378.137    # in km
+    pixel_height = U_equator / lon_num  # height is independent of lat and equal for every pixel
     lat_idx = np.repeat(np.arange(lat_num), lon_num)
-    lat_val = (- lat_idx + 0.5 * len(data.b_grid_shift_ocean)) / 10
-    lat_area = pixel_height * (2*np.pi*R_equator*np.cos(np.pi*lat_val/180)) / lon_num
+    lat_val = (- lat_idx + 0.5 * len(data.b_grid_shift_ocean)) / (lat_num/180)
+    pixel_width = 2*np.pi*R_equator*np.cos(np.pi*lat_val/180) / lon_num     # width of each pixel
+    pixel_area = pixel_height * pixel_width
     b_1D = np.reshape(data.b_grid_shift_ocean, -1)  # 1D bathymetric grid
-    b_1D_area = np.stack((b_1D, lat_area), axis=1)   # now every grid point contains an area value
-    b_1D_clean = b_1D[~np.isnan(b_1D_area[:, 0]) & (b_1D_area[:, 0] < 0)]  # delete NaNs and positive values
+    b_1D_area = np.stack((b_1D, pixel_area), axis=1)   # now every grid point contains an area value
+    b_1D_clean = b_1D_area[~np.isnan(b_1D_area[:, 0]) & (b_1D_area[:, 0] < 0)]  # delete NaNs and positive values
+    print(np.shape(b_1D_clean))
+    print(b_1D_clean[1500000,1])
     # statistics
-    mean_val = np.mean(b_1D_clean)
-    std_dev = np.std(b_1D_clean)
-    skewness = skew(b_1D_clean)
-    kurt_excess = kurtosis(b_1D_clean)  # difference to gauss curve
-    kurt_normal = kurtosis(b_1D_clean, fisher=False)
+    mean_val = np.average(b_1D_clean[:,0], weights=b_1D_clean[:,1])
+    std_dev = np.sqrt(np.average((b_1D_clean[:,0] - mean_val)**2, weights=b_1D_clean[:,1]))
+    skewness = np.average((b_1D_clean[:,0] - mean_val)**3, weights=b_1D_clean[:,1]) / (std_dev**3)
+    kurt_excess = np.average((b_1D_clean[:,0] - mean_val)**4, weights=b_1D_clean[:,1]) / (std_dev**4) - 3  # difference to gauss curve
+    kurt_normal = kurtosis(b_1D, fisher=False)
     stats_text = (
         f"Mean = {mean_val * 0.001:.3f} km\n"
         f"Std Dev = {std_dev * 0.001:.3f} km\n"
@@ -552,7 +578,7 @@ def b_depth_hist(size, x_min, x_max, bins, cumulative=False):
     # plot
     fig3, ax1 = plt.subplots(figsize=(ratio, size))
     relative_font_size = fig3.get_size_inches()[0] * 0.8  # gets font size relative to figure size
-    plt.hist(b_1D_clean, bins=bins, alpha=1, range=(x_min, x_max), color=(0.05, 0.15, 0.5), edgecolor='black')
+    plt.hist(b_1D_clean[:,0], weights=b_1D_clean[:,1], bins=bins, alpha=1, range=(x_min, x_max), color=(0.05, 0.15, 0.5), edgecolor='black')
     plt.tick_params(labelsize=relative_font_size * font_axes_scale)
     x_ticks = np.linspace(x_min, x_max, num=int(abs(x_max-x_min)/1000 + 1))  # Choose appropriate tick positions
     ax1.set_xlim(x_min, x_max+1)
@@ -560,12 +586,12 @@ def b_depth_hist(size, x_min, x_max, bins, cumulative=False):
     ax1.set_xticklabels([f"{int(tick * 0.001)}.0" for tick in x_ticks])  # Convert to km and format
     y_ticks = np.linspace(y_max / 4, y_max, num=4)  # Choose appropriate tick positions
     ax1.set_yticks(y_ticks)
-    ax1.set_yticklabels([f"{int(tick * 0.001)}k" for tick in y_ticks])  # Convert to km and format
+    ax1.set_yticklabels([f"{int(tick * 0.000001)}*10^6" for tick in y_ticks])  # Convert to km and format
     plt.text(0.98, 0.98, "GEBCO_2020 Grid",
              fontsize=relative_font_size * font_text_scale,
              ha="right", va="top", transform=ax1.transAxes)
     plt.xlabel("Bathymetric depth in km", fontsize=relative_font_size * font_label_scale)
-    plt.ylabel("Amount of data points in #", color=(0.05, 0.15, 0.5), fontsize=relative_font_size * font_label_scale)
+    plt.ylabel("Area in km^2", color=(0.05, 0.15, 0.5), fontsize=relative_font_size * font_label_scale)
     ax1.grid(axis='x')
 
     # second y-axis for cumulative graph
@@ -700,3 +726,22 @@ def old_depth_anomaly_scatter():
     plt.show()
 '''
 
+
+def sqrt_t():
+    # Define the x range, avoiding x=0 to prevent division by zero
+    x = np.linspace(0.1, 5, 400)
+    y = -np.sqrt(x)
+
+    # Plotting
+    fig3, ax1 = plt.subplots(figsize=(10, 6))
+    relative_font_size = fig3.get_size_inches()[0]  # gets font size relative to figure size
+    plt.plot(x, y, color=cmap_new_seismic(0.9))
+    plt.xlabel('Age', fontsize=relative_font_size * font_label_scale)
+    plt.ylabel('Sea floor depth', fontsize=relative_font_size * font_label_scale)
+    plt.text(0.65, 0.6, r'$depth \propto \sqrt{t}$',
+             fontsize=relative_font_size * font_text_scale * 1.5,
+             ha="right", va="top", transform=ax1.transAxes)
+    plt.xticks([])
+    plt.yticks([])
+    plt.grid(False)
+    plt.show()

@@ -4,7 +4,7 @@ from scripts.functions import depth_to_age
 import numpy as np
 
 path = "grids/"
-accuracy = 2  # how many minutes° are one grid point (2 or 6)
+accuracy = 6  # how many minutes° are one grid point (2 or 6)
 map_center = 200    # central longitude of plotted map
 max_ridge_age = 0.01    # in Ma, for calculating avr ridge depth
 age_file = netcdf_file(path + f'age.2020.1.GTS2012.{accuracy}m.grd', 'r', mmap=False)
