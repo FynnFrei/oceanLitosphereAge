@@ -469,7 +469,8 @@ def depth_anomaly_hist(size, x_min, x_max, bins, cumulative=False):
     pixel_area = pixel_height * pixel_width
     grid_1D = np.reshape(data.depth_anomaly, -1)  # 1D bathymetric grid
     grid_1D_area = np.stack((grid_1D, pixel_area), axis=1)  # now every grid point contains an area value
-    grid_1D_clean = grid_1D_area[~np.isnan(grid_1D_area[:, 0])]  # delete NaNs and positive values
+    grid_1D_clean = grid_1D_area[~np.isnan(grid_1D_area[:, 0])]  # delete NaNs
+    print(f'shape: {np.shape(grid_1D_clean)}')
     # statistics
     mean_val = np.average(grid_1D_clean[:, 0], weights=grid_1D_clean[:, 1])
     std_dev = np.sqrt(np.average((grid_1D_clean[:, 0] - mean_val) ** 2, weights=grid_1D_clean[:, 1]))
@@ -534,8 +535,8 @@ def depth_anomaly_hist(size, x_min, x_max, bins, cumulative=False):
     # plot for legend
     plt.plot([], [], ' ', label=stats_text)
     plt.legend(loc='upper right', fontsize=relative_font_size * font_text_scale)
-    plt.savefig("plots/histogram_depthdiff.png", dpi=300, bbox_inches='tight')
-    plt.show()
+    #plt.savefig("plots/histogram_depthdiff.png", dpi=300, bbox_inches='tight')
+    #plt.show()
 
 
 # bathymetric depth histogram-----------------------------------------------------------------------------------------------
